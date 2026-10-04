@@ -17,6 +17,7 @@ from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend import settings
@@ -72,10 +73,16 @@ def create_app(service=None):
 
     # ---------- routes ----------
 
+    # Website (frontend_demo/) — served at "/" and "/demo". Read-only file serving only;
+    # it does not touch the prediction API below.
+    @app.get("/", include_in_schema=False)
     @app.get("/demo", include_in_schema=False)
-    def demo_page():
-        """Small upload page (frontend_demo/index.html) that calls this API — for demos and as a reference."""
+    def website():
         return FileResponse(settings.DEMO_PAGE_PATH, media_type="text/html")
+
+    app.mount("/demo/static", StaticFiles(directory=settings.FRONTEND_DIR), name="frontend")
+    # Real project results (metrics JSON, plots) shown on the website's Research section
+    app.mount("/project-results", StaticFiles(directory=settings.RESULTS_DIR), name="results")
 
     @app.get("/health")
     def health():

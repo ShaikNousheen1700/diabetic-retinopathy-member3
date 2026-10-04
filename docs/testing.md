@@ -6,7 +6,7 @@ Run all tests (venv active, from the project root):
 python -m pytest tests/ -v
 ```
 
-**Result (2026-10-04): 38 passed** in ~90 s on CPU.
+**Result (2026-10-04): 39 passed** in ~90 s on CPU.
 
 ## 1. DenseNet tests (13)
 
@@ -26,7 +26,7 @@ python -m pytest tests/ -v
 | | class weights | rarer class → larger weight |
 | | full pipeline | 50 synthetic images: split → train both phases → save → reload → evaluate → predict (path and bytes give same result) |
 
-## 2. Backend tests (25) — `test_api.py`
+## 2. Backend tests (26) — `test_api.py`
 
 Most use a fake predictor (fast; can simulate crashes). The last 3 use the real trained model.
 
@@ -41,7 +41,7 @@ Most use a fake predictor (fast; can simulate crashes). The last 3 use the real 
 | Too small | 40×40 image | 422 `IMAGE_TOO_SMALL` |
 | Model error | predictor raises | 500 `PREDICTION_FAILED`, `/health` still 200 |
 | Model missing | nonexistent model path | `/health` degraded, `/predict` 503 `MODEL_NOT_LOADED` |
-| Demo page | `GET /demo` | 200 HTML using field name `file` |
+| Website | `/`, `/demo`, CSS/JS assets; results files; missing file 404 | pages served, API field name `file` used |
 | Wrong route/method | `GET /predict`, `GET /nope` | 405 / 404 in the same JSON error format |
 | Repeated requests | 20 sequential; 16 concurrent (8 threads); error then success | all succeed, identical results |
 | Real model | `/model-info`; API result == direct `DRPredictor` for 5 real fundus images; 8 concurrent requests | identical predictions |
@@ -65,7 +65,24 @@ of 422. Fixed in `backend/validation.py`.
 First request was 2.9 s before adding a warm-up prediction at startup; after it, the first
 request is ~0.3 s like the rest.
 
-## 4. Real-model sample predictions (CPU, local)
+## 4. Website end-to-end test (headless Chrome)
+
+A script drove Chrome: open the site → choose a file in the upload box → click **Analyze Image** → read the
+displayed result → compare with a direct `POST /predict`.
+
+| Check | Result |
+|---|---|
+| 5 real fundus images | grade, name, confidence and all 5 probability bars **identical** to the API response |
+| `requirements.txt` uploaded | error card: *File type '.txt' is not supported* · `UNSUPPORTED_FILE_TYPE · HTTP 415` |
+| Model info / results sections | filled from `/model-info` and `densenet121_metrics.json` (75.2%, 0.808, 0.578) |
+| Phone width (390 px) | no horizontal scrolling; cards inside the 16 px margins; all chart labels fully visible |
+| Light and dark mode | both checked visually |
+
+Bugs found and fixed during this test: all result states visible at once (CSS overrode the `hidden`
+attribute), result card overflowing on phones with long file names, cut-off class labels, low-contrast
+text on the light grade colours.
+
+## 5. Real-model sample predictions (CPU, local)
 
 | Image | True | Predicted | Confidence |
 |---|---|---|---|

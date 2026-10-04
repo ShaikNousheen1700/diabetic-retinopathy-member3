@@ -193,10 +193,25 @@ def test_model_file_missing_returns_503():
         assert_error(upload(c, encode(make_fundus())), 503, "MODEL_NOT_LOADED")
 
 
-def test_demo_page(client):
-    r = client.get("/demo")
-    assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")
-    assert 'form.append("file"' in r.text          # page uses the documented field name
+def test_website_pages_and_assets(client):
+    for path in ("/", "/demo"):
+        r = client.get(path)
+        assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")
+        assert "/demo/static/app.js" in r.text
+    for asset, ctype in (("styles.css", "text/css"), ("app.js", "javascript"), ("illustrations.js", "javascript")):
+        r = client.get(f"/demo/static/{asset}")
+        assert r.status_code == 200 and ctype in r.headers["content-type"]
+    app_js = client.get("/demo/static/app.js").text
+    assert 'form.append("file"' in app_js            # page uses the documented field name
+    assert "`${API}/predict`" in app_js
+
+
+def test_website_results_files(client):
+    r = client.get("/project-results/densenet121_metrics.json")
+    assert r.status_code == 200 and "quadratic_weighted_kappa" in r.json()
+    assert client.get("/project-results/sample_images.png").status_code == 200
+    assert_error(client.get("/project-results/missing.json"), 404, "NOT_FOUND")
+    assert_error(client.get("/demo/static/../../models/densenet121_dr_info.json"), 404, "NOT_FOUND")
 
 
 def test_wrong_method_and_unknown_route(client):

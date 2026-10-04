@@ -3,135 +3,473 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DR Severity Demo</title>
+<title>DR Severity Classification</title>
+<meta name="description" content="Educational and AI-assisted platform for diabetic retinopathy severity classification with DenseNet121 (APTOS 2019). Research prototype — not a medical diagnosis.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23c8643b'/%3E%3Ccircle cx='21' cy='14' r='4' fill='%23f3c98b'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/demo/static/styles.css">
 <!--
-  Minimal reference client for the DR Severity API (Member 3 — DenseNet + Backend).
-  Served by the backend at GET /demo, so it calls the API on the same address.
-  The team frontend can copy the fetch() logic in predict() below.
+  Structure only. Styling: styles.css · Illustrations: illustrations.js · API calls + rendering: app.js
+  Served by the FastAPI backend at "/" and "/demo"; all API calls go to the same server.
 -->
-<style>
-  :root { --bg:#f6f7f9; --card:#fff; --text:#1d2330; --muted:#667085; --accent:#2563eb;
-          --ok:#16a34a; --bad:#dc2626; --bar:#dbe3f0; --border:#e4e7ec; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#111418; --card:#1b1f26; --text:#e6e8eb; --muted:#9aa3b2; --accent:#60a5fa;
-            --ok:#4ade80; --bad:#f87171; --bar:#2b3340; --border:#2b3340; }
-  }
-  * { box-sizing: border-box; }
-  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-         background:var(--bg); color:var(--text); }
-  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
-  h1 { font-size: 1.5rem; margin: 0 0 4px; }
-  .sub { color: var(--muted); margin: 0 0 20px; }
-  .status { display:inline-block; padding:2px 10px; border-radius:999px; font-size:.85rem;
-            border:1px solid var(--border); }
-  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
-  @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
-  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
-  .drop { display:block; border:2px dashed var(--border); border-radius:10px; padding:20px; text-align:center;
-          cursor:pointer; color:var(--muted); }
-  .drop.over { border-color: var(--accent); }
-  #preview { width:100%; max-height:320px; object-fit:contain; border-radius:8px; margin-top:12px; display:none; }
-  button { margin-top:12px; width:100%; padding:10px; border:0; border-radius:8px; background:var(--accent);
-           color:#fff; font-size:1rem; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:default; }
-  .grade { font-size:1.6rem; font-weight:700; margin:4px 0; }
-  .row { display:grid; grid-template-columns: 130px 1fr 56px; gap:8px; align-items:center; margin:6px 0; font-size:.92rem; }
-  .bar { height:12px; background:var(--bar); border-radius:6px; overflow:hidden; }
-  .bar > div { height:100%; background:var(--accent); }
-  .row.top .bar > div { background: var(--ok); }
-  .error { color:var(--bad); font-weight:600; }
-  .muted { color:var(--muted); font-size:.85rem; }
-</style>
 </head>
 <body>
-<main>
-  <h1>Diabetic Retinopathy Severity — DenseNet121</h1>
-  <p class="sub">Upload a fundus image (PNG/JPEG). Server: <span id="status" class="status">checking…</span></p>
 
-  <div class="grid">
-    <section class="card">
-      <label id="drop" class="drop" for="file">Click to choose an image, or drag it here</label>
-      <input id="file" type="file" accept=".png,.jpg,.jpeg" hidden>
-      <img id="preview" alt="Selected fundus image">
-      <button id="go" disabled>Predict</button>
-    </section>
-
-    <section class="card" id="result">
-      <p class="muted">The prediction will appear here.</p>
-    </section>
+<!-- ============================== NAVIGATION ============================== -->
+<header class="nav" id="top">
+  <div class="nav-inner">
+    <a class="brand" href="#home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>DR Severity AI<small>DenseNet121 · APTOS 2019</small></span>
+    </a>
+    <button class="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+      <span></span><span></span><span></span>
+    </button>
+    <nav id="nav-links" class="nav-links" aria-label="Sections">
+      <a href="#home">Home</a>
+      <a href="#about">About DR</a>
+      <a href="#how">How It Works</a>
+      <a href="#analysis">AI Analysis</a>
+      <a href="#research">Research</a>
+      <a href="#project">About Project</a>
+    </nav>
+    <span class="server-pill" id="server-pill" title="Backend status (GET /health)">
+      <i class="dot"></i><span>Checking server…</span>
+    </span>
   </div>
+</header>
 
-  <p class="muted" style="margin-top:16px">Research prototype for a college project. Not a medical diagnosis.</p>
+<main>
+
+<!-- ============================== 1. HERO ============================== -->
+<section class="hero" id="home">
+  <div class="wrap hero-grid">
+    <div class="hero-text reveal">
+      <span class="eyebrow">Final-year project · Deep learning in ophthalmology</span>
+      <h1>Diabetic Retinopathy Severity Classification</h1>
+      <p class="lead">
+        A deep learning system that looks at a retinal fundus photograph and estimates the
+        severity of diabetic retinopathy on a five-level scale — from no signs of disease to the
+        proliferative stage.
+      </p>
+      <div class="hero-badges">
+        <span class="badge badge-accent">Powered by DenseNet121</span>
+        <span class="badge">APTOS 2019 dataset</span>
+        <span class="badge">5 severity classes</span>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#analysis">Analyze Retinal Image</a>
+        <a class="btn btn-ghost" href="#about">Learn about DR</a>
+      </div>
+      <p class="disclaimer-inline">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 5a1.2 1.2 0 1 1 0 2.4A1.2 1.2 0 0 1 12 7Zm1.2 10h-2.4v-6h2.4v6Z"/></svg>
+        Research prototype for academic purposes. Not a medical diagnosis.
+      </p>
+    </div>
+    <figure class="hero-art reveal" aria-label="Illustration of a retina being analysed">
+      <div class="scan-frame">
+        <div id="hero-retina" class="retina-holder"></div>
+        <div class="scan-line" aria-hidden="true"></div>
+      </div>
+      <figcaption>Illustration — not a real patient image</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============================== 2. ABOUT DR ============================== -->
+<section class="section" id="about">
+  <div class="wrap">
+    <header class="section-head reveal">
+      <span class="eyebrow">About diabetic retinopathy</span>
+      <h2>What is diabetic retinopathy?</h2>
+      <p>
+        Diabetic retinopathy (DR) is an eye condition that can develop in people with diabetes.
+        Over time, high blood sugar can damage the tiny blood vessels of the retina. Early stages
+        often cause no noticeable symptoms, which is why regular eye examinations matter.
+      </p>
+    </header>
+
+    <div class="info-grid">
+      <article class="info-card reveal">
+        <div class="info-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 5C6.5 5 2.7 9.4 1.5 12c1.2 2.6 5 7 10.5 7s9.3-4.4 10.5-7C21.3 9.4 17.5 5 12 5Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></svg>
+        </div>
+        <h3>Why the retina matters</h3>
+        <p>
+          The retina is the thin, light-sensitive layer at the back of the eye. Like the sensor in
+          a camera, it turns light into signals that travel through the optic nerve to the brain.
+          Its centre, the macula, gives us sharp central vision for reading and recognising faces.
+        </p>
+      </article>
+      <article class="info-card reveal">
+        <div class="info-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 2s-6 7.1-6 11.5a6 6 0 0 0 12 0C18 9.1 12 2 12 2Zm0 16a4 4 0 0 1-4-4h2a2 2 0 0 0 2 2v2Z"/></svg>
+        </div>
+        <h3>How blood vessels are affected</h3>
+        <p>
+          Damaged retinal vessels can weaken, bulge, leak fluid or blood, or become blocked.
+          When parts of the retina lose their blood supply, the eye may grow new, fragile vessels
+          that bleed easily.
+        </p>
+      </article>
+      <article class="info-card reveal">
+        <div class="info-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Why early detection helps</h3>
+        <p>
+          Diabetic retinopathy is one of the leading causes of vision loss in working-age adults.
+          Because it can progress silently, finding changes early gives doctors the chance to
+          monitor and treat it before vision is affected.
+        </p>
+      </article>
+    </div>
+
+    <!-- ---------- 3. FIVE SEVERITY LEVELS ---------- -->
+    <header class="section-head sub reveal" id="levels">
+      <span class="eyebrow">The grading scale used in APTOS 2019</span>
+      <h2>Five severity levels</h2>
+      <p>The dataset labels each image with one of five grades. Our model predicts the same five grades.</p>
+    </header>
+    <ol class="levels" id="levels-list"><!-- filled by app.js from one shared list --></ol>
+
+    <!-- ---------- 4. PROGRESSION ---------- -->
+    <header class="section-head sub reveal">
+      <span class="eyebrow">Conceptual progression</span>
+      <h2>What happens to the retina?</h2>
+      <p>
+        A simplified view of how retinal changes can build up as the disease advances.
+      </p>
+    </header>
+    <div class="progression" id="progression"><!-- filled by app.js --></div>
+    <p class="note center reveal">
+      Simplified illustrations to explain the concept — not real images and not diagnostic evidence.
+    </p>
+
+    <!-- ---------- 5. PREVENTION ---------- -->
+    <div class="care reveal">
+      <div class="care-text">
+        <span class="eyebrow">General education</span>
+        <h2>Protecting your eye health</h2>
+        <p>
+          Not every case can be prevented, but these general measures are widely recommended to
+          lower the risk of diabetic eye disease or slow its progression.
+        </p>
+        <p class="note">
+          General educational information, not personalised medical advice. Always follow the
+          guidance of a qualified healthcare professional.
+        </p>
+      </div>
+      <ul class="care-list">
+        <li><span class="care-ico" aria-hidden="true">◎</span><div><b>Manage blood glucose</b><span>Keeping blood sugar within the target range set by your doctor.</span></div></li>
+        <li><span class="care-ico" aria-hidden="true">◉</span><div><b>Regular eye examinations</b><span>Retinal check-ups as often as your eye-care professional recommends, even without symptoms.</span></div></li>
+        <li><span class="care-ico" aria-hidden="true">♥</span><div><b>Manage blood pressure and cholesterol</b><span>Both also affect the health of blood vessels.</span></div></li>
+        <li><span class="care-ico" aria-hidden="true">✓</span><div><b>Follow medical advice</b><span>Take prescribed treatment and report any change in vision promptly.</span></div></li>
+        <li><span class="care-ico" aria-hidden="true">☼</span><div><b>Healthy lifestyle</b><span>Balanced diet, physical activity and not smoking.</span></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 6 + 11. HOW IT WORKS ============================== -->
+<section class="section tinted" id="how">
+  <div class="wrap">
+    <header class="section-head reveal">
+      <span class="eyebrow">How it works</span>
+      <h2>From a retinal photograph to a severity grade</h2>
+      <p>Five steps happen every time you analyse an image.</p>
+    </header>
+
+    <ol class="steps reveal">
+      <li><span class="step-n">1</span><b>Upload</b><span>A retinal fundus image (PNG or JPEG).</span></li>
+      <li><span class="step-n">2</span><b>Preprocess</b><span>Crop the dark border and resize to 224 × 224 pixels.</span></li>
+      <li><span class="step-n">3</span><b>Extract features</b><span>DenseNet121 detects patterns such as vessels, spots and lesions.</span></li>
+      <li><span class="step-n">4</span><b>Classify</b><span>A final layer scores each of the five grades.</span></li>
+      <li><span class="step-n">5</span><b>Result</b><span>The most likely grade with its confidence and all five probabilities.</span></li>
+    </ol>
+
+    <div class="model-explain">
+      <div class="reveal">
+        <h3>What is DenseNet121?</h3>
+        <p>
+          DenseNet121 is a convolutional neural network with 121 layers, designed to learn visual
+          patterns from images. Its special idea is <b>dense connections</b>: inside each block,
+          every layer receives the outputs of <i>all</i> earlier layers, not only the one before it.
+        </p>
+        <p>
+          This lets the network <b>reuse features</b>. Fine details found early — like the tiny dots
+          of an early lesion — stay available to later layers, while the model stays compact
+          (about 7 million parameters).
+        </p>
+        <p>
+          We used <b>transfer learning</b>: the network started from weights learned on millions of
+          everyday images (ImageNet) and was then fine-tuned on retinal images.
+        </p>
+        <figure class="dense-diagram" aria-label="Diagram of dense connections">
+          <svg viewBox="0 0 360 120" role="img">
+            <title>Each layer receives the outputs of all previous layers</title>
+            <g class="dd-links">
+              <path d="M40 60 C 80 10, 120 10, 140 45"/><path d="M40 60 C 100 0, 200 0, 230 45"/>
+              <path d="M40 60 C 120 -10, 280 -10, 320 45"/><path d="M130 60 C 170 10, 210 10, 230 45"/>
+              <path d="M130 60 C 190 0, 290 0, 320 45"/><path d="M220 60 C 260 10, 300 10, 320 45"/>
+            </g>
+            <g class="dd-flow"><path d="M58 75H112"/><path d="M148 75H202"/><path d="M238 75H292"/></g>
+            <g class="dd-nodes">
+              <rect x="22" y="58" width="36" height="34" rx="8"/><rect x="112" y="58" width="36" height="34" rx="8"/>
+              <rect x="202" y="58" width="36" height="34" rx="8"/><rect x="292" y="58" width="36" height="34" rx="8"/>
+            </g>
+            <g class="dd-labels"><text x="40" y="112">Layer 1</text><text x="130" y="112">Layer 2</text><text x="220" y="112">Layer 3</text><text x="310" y="112">Layer 4</text></g>
+          </svg>
+          <figcaption>Curved links: every layer also receives the outputs of all earlier layers.</figcaption>
+        </figure>
+      </div>
+
+      <ol class="pipeline reveal" aria-label="Model pipeline">
+        <li><b>Retinal fundus image</b><span>Any size · PNG / JPEG</span></li>
+        <li><b>Image preprocessing</b><span>Border crop · resize · normalisation</span><em>224 × 224 × 3</em></li>
+        <li class="pl-accent"><b>DenseNet121</b><span>4 dense blocks · ImageNet pre-trained</span></li>
+        <li><b>Feature extraction</b><span>Global average pooling</span><em>7 × 7 × 1024 → 1024</em></li>
+        <li><b>5-class classification</b><span>Dense layer with softmax</span><em>5 probabilities</em></li>
+        <li class="pl-accent"><b>Prediction + confidence</b><span>Highest probability = predicted grade</span></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 7 + 8 + 9. AI ANALYSIS ============================== -->
+<section class="section" id="analysis">
+  <div class="wrap">
+    <header class="section-head reveal">
+      <span class="eyebrow">AI analysis</span>
+      <h2>Analyze a retinal image</h2>
+      <p>Upload a fundus photograph. The image is sent to our backend, processed by DenseNet121, and the real model output is shown below.</p>
+    </header>
+
+    <div class="analysis-grid">
+      <!-- Upload card -->
+      <div class="card upload-card">
+        <label class="dropzone" id="dropzone" for="file-input" tabindex="0">
+          <input id="file-input" type="file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" hidden>
+          <div class="dz-empty" id="dz-empty">
+            <svg class="dz-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 7 8h3v6h4V8h3l-5-5ZM5 17v2h14v-2H5Z"/></svg>
+            <b>Drop a fundus image here</b>
+            <span>or click to browse · PNG or JPEG · up to <span id="limit-mb">10</span> MB</span>
+          </div>
+          <img id="preview" class="preview" alt="Selected retinal image preview" hidden>
+          <div class="dz-nopreview" id="dz-nopreview" hidden>Preview not available — this file may not be an image.</div>
+        </label>
+        <div class="file-row" id="file-row" hidden>
+          <span id="file-name"></span>
+          <button class="link-btn" id="clear-btn" type="button">Remove</button>
+        </div>
+        <button class="btn btn-primary btn-block" id="analyze-btn" type="button" disabled>Analyze Image</button>
+        <p class="note small">Images are processed only to produce the prediction and are not stored by the server.</p>
+      </div>
+
+      <!-- Result card -->
+      <div class="card result-card" id="result" aria-live="polite">
+        <div class="result-empty" id="result-empty">
+          <div class="mini-retina" id="empty-retina" aria-hidden="true"></div>
+          <b>No analysis yet</b>
+          <span>Your result will appear here: the predicted grade, the model's confidence and the probability of every grade.</span>
+        </div>
+
+        <div class="result-loading" id="result-loading" hidden>
+          <div class="loader" aria-hidden="true"></div>
+          <b>Analyzing image…</b>
+          <ol class="loading-steps" id="loading-steps">
+            <li>Uploading and validating</li><li>Preprocessing</li><li>Running DenseNet121</li>
+          </ol>
+        </div>
+
+        <div class="result-error" id="result-error" hidden>
+          <svg class="ico-lg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1.2 15h-2.4v-2.4h2.4V17Zm0-4.4h-2.4V7h2.4v5.6Z"/></svg>
+          <b id="error-title">The image could not be analysed</b>
+          <span id="error-message"></span>
+          <code id="error-code"></code>
+        </div>
+
+        <div class="result-body" id="result-body" hidden>
+          <div class="result-top">
+            <div class="grade-chip" id="grade-chip"><span>Grade</span><b id="grade-num">–</b></div>
+            <div>
+              <span class="kicker">Prediction</span>
+              <h3 id="grade-name">–</h3>
+              <p id="grade-desc" class="muted"></p>
+            </div>
+          </div>
+          <div class="confidence">
+            <span class="kicker">Model confidence</span>
+            <span class="conf-value" id="conf-value">–</span>
+            <span class="muted small">probability the model gives to the predicted grade</span>
+          </div>
+          <div>
+            <span class="kicker">Probability for each grade</span>
+            <div class="prob-chart" id="prob-chart" role="table" aria-label="Probability for each grade"></div>
+          </div>
+          <p class="result-meta" id="result-meta"></p>
+          <p class="note small">Model output for research purposes only — not a medical diagnosis. A low confidence means the model is unsure between grades.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model information (live from GET /model-info) -->
+    <div class="card model-card reveal">
+      <div class="model-card-head">
+        <h3>Model information</h3>
+        <span class="muted small">Loaded live from the backend (<code>GET /model-info</code>)</span>
+      </div>
+      <dl class="model-facts" id="model-facts">
+        <div><dt>Model</dt><dd>DenseNet121</dd></div>
+        <div><dt>Task</dt><dd>5-class diabetic retinopathy classification</dd></div>
+        <div><dt>Dataset</dt><dd>APTOS 2019 Blindness Detection</dd></div>
+        <div><dt>Framework</dt><dd data-info="framework">Loading…</dd></div>
+        <div><dt>Input</dt><dd data-info="input">Retinal fundus image</dd></div>
+        <div><dt>Output</dt><dd>5 DR severity classes</dd></div>
+        <div><dt>Preprocessing</dt><dd data-info="preprocessing">Loading…</dd></div>
+        <div><dt>Training</dt><dd data-info="training">Loading…</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== 10 + 12. RESEARCH ============================== -->
+<section class="section tinted" id="research">
+  <div class="wrap">
+    <header class="section-head reveal">
+      <span class="eyebrow">Research</span>
+      <h2>Dataset and results</h2>
+      <p>All numbers below are read from our project's result files — nothing is estimated or typed by hand.</p>
+    </header>
+
+    <div class="research-grid">
+      <article class="card reveal">
+        <h3>APTOS 2019 Blindness Detection</h3>
+        <p>
+          A public dataset of retinal fundus photographs collected in India and released on Kaggle.
+          Each labelled image carries one of the five severity grades. We used the
+          <b>3,662 labelled training images</b>, split with a fixed seed and the same class
+          proportions in every part:
+        </p>
+        <div class="split-bar" aria-label="Data split">
+          <span style="flex:2564"><b>2,564</b> train</span>
+          <span style="flex:549"><b>549</b> val</span>
+          <span style="flex:549"><b>549</b> test</span>
+        </div>
+        <h4>Images per grade</h4>
+        <div class="dist-chart" id="dist-chart" role="table" aria-label="Images per grade in the dataset"></div>
+        <p class="note small">The dataset is imbalanced: almost half of the images show no DR. We used class weights during training to compensate.</p>
+      </article>
+
+      <article class="card reveal">
+        <h3>Example images from the dataset</h3>
+        <p class="muted">One real APTOS image per grade (top) and the same image after our preprocessing (bottom).</p>
+        <img class="figure-img" src="/project-results/sample_images.png" alt="Five APTOS fundus images, one per grade, before and after preprocessing" loading="lazy">
+        <p class="note small" style="margin-top:12px">The photographs come from different cameras and range from 1050 × 1050 to 3216 × 2136 pixels. Cropping the dark border and resizing to 224 × 224 gives the model consistent input.</p>
+      </article>
+    </div>
+
+    <!-- DenseNet results -->
+    <div class="card reveal">
+      <div class="model-card-head">
+        <h3>DenseNet121 results on the test set</h3>
+        <span class="muted small" id="test-size">549 images the model never saw during training</span>
+      </div>
+      <div class="stat-row" id="stat-row"><p class="muted">Loading results…</p></div>
+      <div class="results-grid">
+        <div>
+          <h4>Recall per grade <span class="muted small">(share of each grade found)</span></h4>
+          <div class="recall-chart" id="recall-chart"></div>
+        </div>
+        <div>
+          <h4>Confusion matrix <span class="muted small">(rows: true grade · columns: predicted)</span></h4>
+          <div class="cm" id="cm"></div>
+          <p class="note small">Shade = share of the true grade's images. Most mistakes fall next to the diagonal — between neighbouring grades.</p>
+        </div>
+      </div>
+      <details class="curves">
+        <summary>Show training curves</summary>
+        <img class="figure-img" src="/project-results/densenet121_training_curves.png" alt="Training and validation accuracy and loss per epoch" loading="lazy">
+        <p class="note small">Dashed line: start of fine-tuning. Validation loss was still decreasing at the final epoch.</p>
+      </details>
+    </div>
+
+    <!-- Comparison -->
+    <div class="card reveal" id="comparison">
+      <div class="model-card-head">
+        <h3>Model comparison</h3>
+        <span class="muted small">Same dataset, split, image size and metrics for every model</span>
+      </div>
+      <p>
+        The overall project compares three deep learning architectures under common experimental
+        conditions. Each team member trains one model; results are added here once available.
+      </p>
+      <div class="table-wrap">
+        <table class="compare">
+          <thead><tr><th>Model</th><th>Accuracy</th><th>Quadratic weighted kappa</th><th>Macro F1</th><th>Parameters</th><th>Status</th></tr></thead>
+          <tbody id="compare-body">
+            <tr><td>DenseNet121</td><td colspan="4" class="muted">Loading…</td><td></td></tr>
+            <tr><td>ResNet</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td><span class="status pending">Awaiting results</span></td></tr>
+            <tr><td>EfficientNet</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td><span class="status pending">Awaiting results</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ABOUT PROJECT ============================== -->
+<section class="section" id="project">
+  <div class="wrap">
+    <header class="section-head reveal">
+      <span class="eyebrow">About the project</span>
+      <h2>Comparative Analysis of Deep Learning Models for Diabetic Retinopathy Severity Classification</h2>
+      <p>
+        The project studies how well different convolutional neural networks grade diabetic
+        retinopathy from fundus images, when all of them are trained and tested under the same
+        conditions.
+      </p>
+    </header>
+    <div class="info-grid">
+      <article class="info-card reveal">
+        <h3>Objective</h3>
+        <p>Compare DenseNet, ResNet and EfficientNet for 5-class DR severity classification on APTOS 2019, and provide a working prediction system.</p>
+      </article>
+      <article class="info-card reveal">
+        <h3>Common conditions</h3>
+        <p>Same data split (70 / 15 / 15, seed 42), 224 × 224 input, ImageNet transfer learning, the same training schedule and the same evaluation metrics.</p>
+      </article>
+      <article class="info-card reveal">
+        <h3>Technology</h3>
+        <p>Python · TensorFlow / Keras · OpenCV · NumPy · Pandas · scikit-learn · Matplotlib · Seaborn · FastAPI · Google Colab (GPU training).</p>
+      </article>
+    </div>
+  </div>
+</section>
+
 </main>
 
-<script>
-const API = "";   // same address as this page; set e.g. "http://127.0.0.1:8000" if opened elsewhere
-const fileInput = document.getElementById("file");
-const drop = document.getElementById("drop");
-const preview = document.getElementById("preview");
-const goBtn = document.getElementById("go");
-const result = document.getElementById("result");
-let selected = null;
+<!-- ============================== FOOTER ============================== -->
+<footer class="footer">
+  <div class="wrap footer-grid">
+    <div>
+      <a class="brand" href="#home"><span class="brand-mark" aria-hidden="true"></span><span>DR Severity AI<small>DenseNet121 · APTOS 2019</small></span></a>
+      <p class="muted small">Final-year project · Comparative Analysis of Deep Learning Models for Diabetic Retinopathy Severity Classification.</p>
+    </div>
+    <div>
+      <b>Explore</b>
+      <a href="#about">About DR</a><a href="#how">How It Works</a><a href="#analysis">AI Analysis</a><a href="#research">Research</a>
+    </div>
+    <div>
+      <b>For developers</b>
+      <a href="/docs">API documentation</a><a href="/health">Health check</a><a href="/model-info">Model info (JSON)</a>
+    </div>
+  </div>
+  <div class="wrap footer-note">
+    Research prototype for academic purposes. Not a medical diagnosis. Predictions must not be used for clinical decisions.
+  </div>
+</footer>
 
-// --- GET /health: show whether the model is ready ---
-fetch(`${API}/health`).then(r => r.json()).then(h => {
-  const s = document.getElementById("status");
-  s.textContent = h.model_loaded ? "model ready" : "model NOT loaded";
-  s.style.color = h.model_loaded ? "var(--ok)" : "var(--bad)";
-}).catch(() => { document.getElementById("status").textContent = "unreachable"; });
-
-function choose(file) {
-  if (!file) return;
-  selected = file;
-  preview.src = URL.createObjectURL(file);
-  preview.style.display = "block";
-  drop.textContent = file.name;
-  goBtn.disabled = false;
-}
-fileInput.addEventListener("change", () => choose(fileInput.files[0]));
-drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
-drop.addEventListener("dragleave", () => drop.classList.remove("over"));
-drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); choose(e.dataTransfer.files[0]); });
-goBtn.addEventListener("click", predict);
-
-// --- POST /predict: the part a frontend needs ---
-async function predict() {
-  goBtn.disabled = true;
-  result.innerHTML = '<p class="muted">Predicting…</p>';
-  const form = new FormData();
-  form.append("file", selected);                  // field name must be "file"
-  try {
-    const res = await fetch(`${API}/predict`, { method: "POST", body: form });
-    const body = await res.json();
-    if (!body.success) {                          // every error: {success:false, error:{code,message}}
-      result.innerHTML = `<p class="error">${esc(body.error.message)}</p><p class="muted">HTTP ${res.status} · ${esc(body.error.code)}</p>`;
-      return;
-    }
-    show(body);
-  } catch (err) {
-    result.innerHTML = `<p class="error">Could not reach the server.</p>`;
-  } finally {
-    goBtn.disabled = false;
-  }
-}
-
-function show(body) {
-  const p = body.prediction;
-  const rows = Object.entries(p.probabilities).map(([name, prob]) => `
-    <div class="row ${name === p.class_name ? "top" : ""}">
-      <span>${esc(name)}</span>
-      <div class="bar"><div style="width:${(prob * 100).toFixed(1)}%"></div></div>
-      <span>${(prob * 100).toFixed(1)}%</span>
-    </div>`).join("");
-  result.innerHTML = `
-    <p class="muted">Predicted grade</p>
-    <p class="grade">${p.class_id} · ${esc(p.class_name)}</p>
-    <p>Confidence: <b>${(p.confidence * 100).toFixed(1)}%</b></p>
-    ${rows}
-    <p class="muted">${body.image_size.width}×${body.image_size.height} px · ${body.processing_time_ms} ms · ${esc(body.model)}</p>`;
-}
-
-function esc(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-</script>
+<script src="/demo/static/illustrations.js"></script>
+<script src="/demo/static/app.js"></script>
 </body>
 </html>

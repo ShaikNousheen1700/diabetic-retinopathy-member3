@@ -18,13 +18,10 @@ Total time: about 10 minutes. Sections 1–4 explain, section 5 is the live demo
    uvicorn backend.main:app --host 127.0.0.1 --port 8000
    ```
    Wait for `Model loaded and warmed up` (~12 s).
-3. Open three browser tabs:
-   - `http://127.0.0.1:8000/demo` — upload page
+3. Open two browser tabs:
+   - `http://127.0.0.1:8000/` — the project website (everything below is shown from it)
    - `http://127.0.0.1:8000/docs` — interactive API documentation
-   - the GitHub repo README (results tables and plots)
-4. Open the images in `results/` so they are ready to show:
-   `class_distribution.png`, `sample_images.png`, `densenet121_training_curves.png`,
-   `densenet121_confusion_matrix.png`, `sample_predictions.png`.
+4. Check the green **Model ready** badge in the website's top bar.
 
 If something fails, see section 7.
 
@@ -41,14 +38,14 @@ The 5 grades: 0 No DR · 1 Mild · 2 Moderate · 3 Severe · 4 Proliferative DR.
 
 ## 2. Dataset and preprocessing (2 min)
 
-**Show:** `results/class_distribution.png`
+**Show:** website → *Research* → *Images per grade*
 
 - 3,662 labelled fundus images. Kaggle's test images have no labels, so we split the labelled set.
 - Strong imbalance: 1,805 No DR vs only 193 Severe. Always predicting "No DR" would already give
   49% accuracy — this is why we use **class weights** and report **QWK and macro F1**, not only accuracy.
 - Stratified split 70 / 15 / 15 with seed 42 → 2,564 train / 549 validation / 549 test.
 
-**Show:** `results/sample_images.png`
+**Show:** website → *Research* → *Example images from the dataset*
 
 - Original images come from different cameras, from 1050×1050 up to 3216×2136 pixels.
 - Preprocessing: BGR→RGB, **crop the black border**, **resize to 224×224**. ImageNet normalisation
@@ -60,7 +57,7 @@ The 5 grades: 0 No DR · 1 Mild · 2 Moderate · 3 Severe · 4 Proliferative DR.
 
 ## 3. DenseNet121 model and training (2 min)
 
-**Explain with the diagram:**
+**Show:** website → *How It Works* (five steps, dense-connection diagram, model pipeline).
 
 ```
 224×224×3 image → normalisation → DenseNet121 (4 dense blocks) → 7×7×1024 features
@@ -75,7 +72,7 @@ The 5 grades: 0 No DR · 1 Mild · 2 Moderate · 3 Severe · 4 Proliferative DR.
   1. Base frozen, train only the new head — 10 epochs, lr 1e-3.
   2. Unfreeze the last dense block, fine-tune — 20 epochs, lr 1e-5, early stopping.
 
-**Show:** `results/densenet121_training_curves.png`
+**Show:** website → *Research* → *Show training curves*
 
 - Dashed line = start of fine-tuning; validation loss drops further after it.
 - Validation accuracy is slightly above training accuracy because augmentation and dropout make
@@ -85,7 +82,7 @@ The 5 grades: 0 No DR · 1 Mild · 2 Moderate · 3 Severe · 4 Proliferative DR.
 
 ## 4. Results (2 min)
 
-**Show:** README results table and `results/densenet121_confusion_matrix.png`
+**Show:** website → *Research* → result tiles, recall per grade and confusion matrix
 
 | Metric (549 test images) | Value |
 |---|---|
@@ -102,7 +99,7 @@ The 5 grades: 0 No DR · 1 Mild · 2 Moderate · 3 Severe · 4 Proliferative DR.
 - **Weakest class: Severe (31% recall)** — only 193 training-set examples and visually between
   Moderate and Proliferative.
 
-**Show:** `results/sample_predictions.png` — green = correct, red = wrong.
+**Show:** website → *Research* → *Model comparison* (DenseNet121 completed; ResNet and EfficientNet awaiting results).
 
 ## 5. Live backend demo (3 min)
 
@@ -120,7 +117,7 @@ flowchart LR
 
 **Steps:**
 
-1. **`/demo` tab** — the status badge shows *model ready* (from `GET /health`).
+1. **Website → AI Analysis** — the top bar shows *Model ready* (from `GET /health`); *Model information* below is loaded live from `GET /model-info`.
 2. Upload `samples/class0_31360e44ac64.png` → **No DR, 95.4%**. Point at the 5 probability bars.
 3. Upload `samples/class1_4aa07d720638.png` → **Mild, 60.9%** (correct).
 4. Upload `samples/class2_a688f20f8895.png` → predicted **Mild** (true: Moderate) — an honest
@@ -131,7 +128,7 @@ flowchart LR
    model name, classes, preprocessing steps, training split, upload limits.
 7. Point at the terminal: each request is logged with file name, prediction and time (~0.3 s).
 
-**What the backend handles** (all covered by automated tests — 38 passing):
+**What the backend handles** (all covered by automated tests — 39 passing):
 
 | Situation | Response |
 |---|---|
@@ -161,5 +158,5 @@ flowchart LR
 | `uvicorn: command not found` | run `source .venv/bin/activate` first |
 | `address already in use` | a server is already running — use it, or stop it with Ctrl+C in its terminal |
 | `/health` shows *degraded* | `models/densenet121_dr.keras` missing → download it again from `MyDrive/DR_project/densenet121/` |
-| Demo page says *unreachable* | the server is not running — start it (section 0, step 2) |
+| Website shows *Server offline* | the server is not running — start it (section 0, step 2) |
 | First prediction slow | wait for `Model loaded and warmed up` before the first upload |

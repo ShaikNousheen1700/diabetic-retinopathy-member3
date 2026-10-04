@@ -27,7 +27,7 @@ API documentation: [docs/api.md](docs/api.md) · Testing: [docs/testing.md](docs
 | `backend/validation.py` | Upload checks: missing, type, size, corrupted, dimensions |
 | `backend/model_service.py` | Loads the model once at startup, thread-safe prediction |
 | `backend/settings.py` | Model path, upload limits, CORS |
-| `frontend_demo/index.html` | Upload page served at `/demo`; reference client for the frontend |
+| `frontend_demo/` | Website served at `/` (and `/demo`): education about DR, how the model works, live analysis, real results. `index.html` (structure), `styles.css`, `app.js` (API calls), `illustrations.js` (drawn retina illustrations) |
 | `notebooks/00_download_dataset.ipynb` | Downloads APTOS into Google Drive (run once) |
 | `notebooks/01_densenet_training.ipynb` | Training + evaluation + sample predictions on Colab |
 | `tests/` | Tests for preprocessing, model and the full pipeline |
@@ -69,7 +69,7 @@ source .venv/bin/activate
 uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-Then open http://127.0.0.1:8000/demo (upload page), http://127.0.0.1:8000/docs (API docs), or:
+Then open http://127.0.0.1:8000/ (website), http://127.0.0.1:8000/docs (API docs), or:
 
 ```bash
 curl -F "file=@path/to/fundus.png" http://127.0.0.1:8000/predict
@@ -84,7 +84,7 @@ source .venv/bin/activate
 python -m pytest tests/ -v
 ```
 
-38 tests: preprocessing, model, full training pipeline and every backend case
+39 tests: preprocessing, model, full training pipeline and every backend case
 (valid image, missing/unsupported/corrupted/oversized file, model errors, repeated requests).
 See [docs/testing.md](docs/testing.md).
 
