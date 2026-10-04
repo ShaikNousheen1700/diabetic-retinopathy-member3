@@ -14,7 +14,26 @@ import numpy as np
 from tensorflow import keras
 
 from src import config
+from src.model import build_densenet121
 from src.preprocessing import decode_image_bytes, load_image, preprocess_image
+
+
+def load_trained_model(model_path):
+    """Load the trained .keras model.
+
+    A .keras file stores two things: the architecture (as Keras config) and the weights.
+    A file saved by a newer Keras (e.g. 3.13 on Colab) can contain config options an older
+    Keras (e.g. 3.12 here, the newest for Python 3.10) does not know, and load_model fails.
+    In that case we rebuild the identical architecture from src/model.py and load only
+    the weights, which do not depend on the Keras version.
+    """
+    try:
+        return keras.models.load_model(model_path, compile=False)
+    except (TypeError, ValueError) as err:
+        print(f"Full model load failed ({type(err).__name__}); rebuilding architecture and loading weights")
+        model, _ = build_densenet121(weights=None)
+        model.load_weights(model_path)
+        return model
 
 
 class DRPredictor:
@@ -30,7 +49,7 @@ class DRPredictor:
     """
 
     def __init__(self, model_path, use_ben_graham=config.USE_BEN_GRAHAM):
-        self.model = keras.models.load_model(model_path)
+        self.model = load_trained_model(model_path)
         self.img_size = self.model.input_shape[1]        # read from the model, e.g. 224
         self.use_ben_graham = use_ben_graham
 

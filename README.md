@@ -66,6 +66,26 @@ python -m pytest tests/ -v
 The pipeline test trains on 50 synthetic images for 1 epoch per phase, so it checks that
 everything runs end to end. It does not measure accuracy.
 
-## Results
+## Results (DenseNet121, test split = 549 images)
 
-*Filled in after training on Colab.*
+| Metric | Value |
+|---|---|
+| Accuracy | 0.752 |
+| Quadratic Weighted Kappa | 0.808 |
+| Macro F1 | 0.578 |
+| Weighted F1 | 0.753 |
+| Parameters | 7,042,629 |
+| Model file | 46.8 MB |
+| Inference (Colab T4, batched) | 76.15 ms / image |
+| Training | 30 epochs (10 head + 20 fine-tune), 17.7 min on T4 |
+
+| Class | Precision | Recall | F1 | Test images |
+|---|---|---|---|---|
+| No DR | 0.94 | 0.97 | 0.95 | 271 |
+| Mild | 0.41 | 0.60 | 0.49 | 55 |
+| Moderate | 0.76 | 0.58 | 0.66 | 150 |
+| Severe | 0.38 | 0.31 | 0.34 | 29 |
+| Proliferative DR | 0.43 | 0.48 | 0.45 | 44 |
+
+![Confusion matrix](results/densenet121_confusion_matrix.png)
+![Training curves](results/densenet121_training_curves.png)

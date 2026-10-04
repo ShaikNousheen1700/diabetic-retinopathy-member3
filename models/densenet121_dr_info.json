@@ -1,0 +1,35 @@
+{
+  "model_name": "DenseNet121",
+  "model_file": "densenet121_dr.keras",
+  "framework": "TensorFlow 2.20.0 / Keras 3.13.2",
+  "input_size": [
+    224,
+    224,
+    3
+  ],
+  "class_names": [
+    "No DR",
+    "Mild",
+    "Moderate",
+    "Severe",
+    "Proliferative DR"
+  ],
+  "preprocessing": {
+    "steps": [
+      "BGR->RGB",
+      "crop black border",
+      "resize 224x224",
+      "ImageNet normalisation (inside model)"
+    ],
+    "use_ben_graham": false
+  },
+  "weights": "imagenet",
+  "split_sizes": {
+    "train": 2564,
+    "val": 549,
+    "test": 549
+  },
+  "epochs_trained": 30,
+  "train_seconds": 1063.7,
+  "trained_at": "2026-10-04 14:05:31"
+}

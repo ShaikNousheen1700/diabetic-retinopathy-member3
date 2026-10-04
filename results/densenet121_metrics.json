@@ -1,0 +1,95 @@
+{
+  "model": "DenseNet121",
+  "test_images": 549,
+  "accuracy": 0.7522768670309654,
+  "macro_f1": 0.5775522770301016,
+  "weighted_f1": 0.7533805848501062,
+  "quadratic_weighted_kappa": 0.8078019504876219,
+  "classification_report": {
+    "No DR": {
+      "precision": 0.9392857142857143,
+      "recall": 0.9704797047970479,
+      "f1-score": 0.9546279491833031,
+      "support": 271.0
+    },
+    "Mild": {
+      "precision": 0.4074074074074074,
+      "recall": 0.6,
+      "f1-score": 0.4852941176470588,
+      "support": 55.0
+    },
+    "Moderate": {
+      "precision": 0.7565217391304347,
+      "recall": 0.58,
+      "f1-score": 0.6566037735849056,
+      "support": 150.0
+    },
+    "Severe": {
+      "precision": 0.375,
+      "recall": 0.3103448275862069,
+      "f1-score": 0.33962264150943394,
+      "support": 29.0
+    },
+    "Proliferative DR": {
+      "precision": 0.42857142857142855,
+      "recall": 0.4772727272727273,
+      "f1-score": 0.45161290322580644,
+      "support": 44.0
+    },
+    "accuracy": 0.7522768670309654,
+    "macro avg": {
+      "precision": 0.581357257878997,
+      "recall": 0.5876194519311964,
+      "f1-score": 0.5775522770301016,
+      "support": 549.0
+    },
+    "weighted avg": {
+      "precision": 0.7653264839809546,
+      "recall": 0.7522768670309654,
+      "f1-score": 0.7533805848501062,
+      "support": 549.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      263,
+      7,
+      0,
+      0,
+      1
+    ],
+    [
+      8,
+      33,
+      13,
+      0,
+      1
+    ],
+    [
+      7,
+      29,
+      87,
+      10,
+      17
+    ],
+    [
+      2,
+      2,
+      7,
+      9,
+      9
+    ],
+    [
+      0,
+      10,
+      8,
+      5,
+      21
+    ]
+  ],
+  "total_params": 7042629,
+  "inference_ms_per_image": 76.15,
+  "model_file_mb": 46.8,
+  "epochs_trained": 30,
+  "train_minutes": 17.7
+}
