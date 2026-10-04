@@ -1,0 +1,23 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# --- Dataset (downloaded only on Colab, never committed) ---
+data/*
+!data/.gitkeep
+
+# --- Trained models (too large for git) ---
+models/*.keras
+models/*.h5
+models/*.weights.h5
+
+# --- Secrets ---
+.env
+kaggle.json
+
+# --- Editor / OS ---
+.vscode/
+.DS_Store
