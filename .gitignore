@@ -21,3 +21,7 @@ kaggle.json
 # --- Editor / OS ---
 .vscode/
 .DS_Store
+
+# --- Library config/cache redirected into project ---
+.keras_home/
+.mplconfig/
