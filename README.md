@@ -6,10 +6,11 @@ Part of the team project **"Comparative Analysis of Deep Learning Models for Dia
 - **Model:** DenseNet121, ImageNet transfer learning, two-phase training
 - **Framework:** TensorFlow / Keras (model saved as `.keras`)
 - **Training:** Google Colab (T4 GPU)
-- **Backend:** prediction API (`/health`, `/model-info`, `/predict`) — *in progress*
+- **Backend:** FastAPI prediction API (`/health`, `/model-info`, `/predict`)
 
 Model and preprocessing details: [docs/densenet_model.md](docs/densenet_model.md)
 Shared team settings: [docs/common_experiment_settings.md](docs/common_experiment_settings.md)
+API documentation: [docs/api.md](docs/api.md) · Testing: [docs/testing.md](docs/testing.md)
 
 ## Project structure
 
@@ -22,6 +23,10 @@ Shared team settings: [docs/common_experiment_settings.md](docs/common_experimen
 | `src/train.py` | Two-phase training, saves model + history + info |
 | `src/evaluate.py` | Test metrics, confusion matrix, training curves |
 | `src/predict.py` | `DRPredictor` + command-line sample prediction |
+| `backend/main.py` | FastAPI app: routes and JSON error handling |
+| `backend/validation.py` | Upload checks: missing, type, size, corrupted, dimensions |
+| `backend/model_service.py` | Loads the model once at startup, thread-safe prediction |
+| `backend/settings.py` | Model path, upload limits, CORS |
 | `notebooks/00_download_dataset.ipynb` | Downloads APTOS into Google Drive (run once) |
 | `notebooks/01_densenet_training.ipynb` | Training + evaluation + sample predictions on Colab |
 | `tests/` | Tests for preprocessing, model and the full pipeline |
@@ -56,12 +61,31 @@ Output:
 {"class_id": 2, "class_name": "Moderate", "confidence": 0.81, "probabilities": {"No DR": 0.02, "...": 0.0}}
 ```
 
+## Backend (local)
+
+```bash
+source .venv/bin/activate
+uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+Then open http://127.0.0.1:8000/docs, or:
+
+```bash
+curl -F "file=@path/to/fundus.png" http://127.0.0.1:8000/predict
+```
+
+Full details, error codes and frontend examples: [docs/api.md](docs/api.md).
+
 ## Tests
 
 ```bash
 source .venv/bin/activate
 python -m pytest tests/ -v
 ```
+
+37 tests: preprocessing, model, full training pipeline and every backend case
+(valid image, missing/unsupported/corrupted/oversized file, model errors, repeated requests).
+See [docs/testing.md](docs/testing.md).
 
 The pipeline test trains on 50 synthetic images for 1 epoch per phase, so it checks that
 everything runs end to end. It does not measure accuracy.
