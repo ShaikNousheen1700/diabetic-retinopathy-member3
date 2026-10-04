@@ -6,7 +6,7 @@ Run all tests (venv active, from the project root):
 python -m pytest tests/ -v
 ```
 
-**Result (2026-10-04): 37 passed** in ~90 s on CPU.
+**Result (2026-10-04): 38 passed** in ~90 s on CPU.
 
 ## 1. DenseNet tests (13)
 
@@ -26,7 +26,7 @@ python -m pytest tests/ -v
 | | class weights | rarer class → larger weight |
 | | full pipeline | 50 synthetic images: split → train both phases → save → reload → evaluate → predict (path and bytes give same result) |
 
-## 2. Backend tests (24) — `test_api.py`
+## 2. Backend tests (25) — `test_api.py`
 
 Most use a fake predictor (fast; can simulate crashes). The last 3 use the real trained model.
 
@@ -41,6 +41,7 @@ Most use a fake predictor (fast; can simulate crashes). The last 3 use the real 
 | Too small | 40×40 image | 422 `IMAGE_TOO_SMALL` |
 | Model error | predictor raises | 500 `PREDICTION_FAILED`, `/health` still 200 |
 | Model missing | nonexistent model path | `/health` degraded, `/predict` 503 `MODEL_NOT_LOADED` |
+| Demo page | `GET /demo` | 200 HTML using field name `file` |
 | Wrong route/method | `GET /predict`, `GET /nope` | 405 / 404 in the same JSON error format |
 | Repeated requests | 20 sequential; 16 concurrent (8 threads); error then success | all succeed, identical results |
 | Real model | `/model-info`; API result == direct `DRPredictor` for 5 real fundus images; 8 concurrent requests | identical predictions |

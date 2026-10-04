@@ -21,4 +21,6 @@ MAX_IMAGE_PIXELS = 40_000_000                # 40 MP; largest APTOS image is ~7 
 # --- CORS: which frontend origins may call the API ("*" = any, fine for development) ---
 CORS_ORIGINS = [o.strip() for o in os.environ.get("DR_CORS_ORIGINS", "*").split(",") if o.strip()]
 
-DISCLAIMER = "Research prototype for a college project. Not a medical diagnosis."
+DEMO_PAGE_PATH = os.path.join(PROJECT_ROOT, "frontend_demo", "index.html")
+
+DISCLAIMER ="Research prototype for a college project. Not a medical diagnosis."

@@ -148,6 +148,8 @@ Every error has the same shape:
 
 ## Frontend integration
 
+A complete working example is `frontend_demo/index.html`, served at `http://127.0.0.1:8000/demo`.
+
 JavaScript (`fetch`):
 
 ```js

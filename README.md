@@ -10,7 +10,7 @@ Part of the team project **"Comparative Analysis of Deep Learning Models for Dia
 
 Model and preprocessing details: [docs/densenet_model.md](docs/densenet_model.md)
 Shared team settings: [docs/common_experiment_settings.md](docs/common_experiment_settings.md)
-API documentation: [docs/api.md](docs/api.md) · Testing: [docs/testing.md](docs/testing.md)
+API documentation: [docs/api.md](docs/api.md) · Testing: [docs/testing.md](docs/testing.md) · Demo guide: [docs/demo_guide.md](docs/demo_guide.md)
 
 ## Project structure
 
@@ -27,6 +27,7 @@ API documentation: [docs/api.md](docs/api.md) · Testing: [docs/testing.md](docs
 | `backend/validation.py` | Upload checks: missing, type, size, corrupted, dimensions |
 | `backend/model_service.py` | Loads the model once at startup, thread-safe prediction |
 | `backend/settings.py` | Model path, upload limits, CORS |
+| `frontend_demo/index.html` | Upload page served at `/demo`; reference client for the frontend |
 | `notebooks/00_download_dataset.ipynb` | Downloads APTOS into Google Drive (run once) |
 | `notebooks/01_densenet_training.ipynb` | Training + evaluation + sample predictions on Colab |
 | `tests/` | Tests for preprocessing, model and the full pipeline |
@@ -68,7 +69,7 @@ source .venv/bin/activate
 uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-Then open http://127.0.0.1:8000/docs, or:
+Then open http://127.0.0.1:8000/demo (upload page), http://127.0.0.1:8000/docs (API docs), or:
 
 ```bash
 curl -F "file=@path/to/fundus.png" http://127.0.0.1:8000/predict
@@ -83,7 +84,7 @@ source .venv/bin/activate
 python -m pytest tests/ -v
 ```
 
-37 tests: preprocessing, model, full training pipeline and every backend case
+38 tests: preprocessing, model, full training pipeline and every backend case
 (valid image, missing/unsupported/corrupted/oversized file, model errors, repeated requests).
 See [docs/testing.md](docs/testing.md).
 

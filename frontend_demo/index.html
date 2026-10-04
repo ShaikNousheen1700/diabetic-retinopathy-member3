@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DR Severity Demo</title>
+<!--
+  Minimal reference client for the DR Severity API (Member 3 — DenseNet + Backend).
+  Served by the backend at GET /demo, so it calls the API on the same address.
+  The team frontend can copy the fetch() logic in predict() below.
+-->
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1d2330; --muted:#667085; --accent:#2563eb;
+          --ok:#16a34a; --bad:#dc2626; --bar:#dbe3f0; --border:#e4e7ec; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#111418; --card:#1b1f26; --text:#e6e8eb; --muted:#9aa3b2; --accent:#60a5fa;
+            --ok:#4ade80; --bad:#f87171; --bar:#2b3340; --border:#2b3340; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+         background:var(--bg); color:var(--text); }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .status { display:inline-block; padding:2px 10px; border-radius:999px; font-size:.85rem;
+            border:1px solid var(--border); }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .drop { border:2px dashed var(--border); border-radius:10px; padding:20px; text-align:center;
+          cursor:pointer; color:var(--muted); }
+  .drop.over { border-color: var(--accent); }
+  #preview { width:100%; max-height:320px; object-fit:contain; border-radius:8px; margin-top:12px; display:none; }
+  button { margin-top:12px; width:100%; padding:10px; border:0; border-radius:8px; background:var(--accent);
+           color:#fff; font-size:1rem; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .grade { font-size:1.6rem; font-weight:700; margin:4px 0; }
+  .row { display:grid; grid-template-columns: 130px 1fr 56px; gap:8px; align-items:center; margin:6px 0; font-size:.92rem; }
+  .bar { height:12px; background:var(--bar); border-radius:6px; overflow:hidden; }
+  .bar > div { height:100%; background:var(--accent); }
+  .row.top .bar > div { background: var(--ok); }
+  .error { color:var(--bad); font-weight:600; }
+  .muted { color:var(--muted); font-size:.85rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Diabetic Retinopathy Severity — DenseNet121</h1>
+  <p class="sub">Upload a fundus image (PNG/JPEG). Server: <span id="status" class="status">checking…</span></p>
+
+  <div class="grid">
+    <section class="card">
+      <label id="drop" class="drop" for="file">Click to choose an image, or drag it here</label>
+      <input id="file" type="file" accept=".png,.jpg,.jpeg" hidden>
+      <img id="preview" alt="Selected fundus image">
+      <button id="go" disabled>Predict</button>
+    </section>
+
+    <section class="card" id="result">
+      <p class="muted">The prediction will appear here.</p>
+    </section>
+  </div>
+
+  <p class="muted" style="margin-top:16px">Research prototype for a college project. Not a medical diagnosis.</p>
+</main>
+
+<script>
+const API = "";   // same address as this page; set e.g. "http://127.0.0.1:8000" if opened elsewhere
+const fileInput = document.getElementById("file");
+const drop = document.getElementById("drop");
+const preview = document.getElementById("preview");
+const goBtn = document.getElementById("go");
+const result = document.getElementById("result");
+let selected = null;
+
+// --- GET /health: show whether the model is ready ---
+fetch(`${API}/health`).then(r => r.json()).then(h => {
+  const s = document.getElementById("status");
+  s.textContent = h.model_loaded ? "model ready" : "model NOT loaded";
+  s.style.color = h.model_loaded ? "var(--ok)" : "var(--bad)";
+}).catch(() => { document.getElementById("status").textContent = "unreachable"; });
+
+function choose(file) {
+  if (!file) return;
+  selected = file;
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = "block";
+  drop.textContent = file.name;
+  goBtn.disabled = false;
+}
+fileInput.addEventListener("change", () => choose(fileInput.files[0]));
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); choose(e.dataTransfer.files[0]); });
+goBtn.addEventListener("click", predict);
+
+// --- POST /predict: the part a frontend needs ---
+async function predict() {
+  goBtn.disabled = true;
+  result.innerHTML = '<p class="muted">Predicting…</p>';
+  const form = new FormData();
+  form.append("file", selected);                  // field name must be "file"
+  try {
+    const res = await fetch(`${API}/predict`, { method: "POST", body: form });
+    const body = await res.json();
+    if (!body.success) {                          // every error: {success:false, error:{code,message}}
+      result.innerHTML = `<p class="error">${esc(body.error.message)}</p><p class="muted">HTTP ${res.status} · ${esc(body.error.code)}</p>`;
+      return;
+    }
+    show(body);
+  } catch (err) {
+    result.innerHTML = `<p class="error">Could not reach the server.</p>`;
+  } finally {
+    goBtn.disabled = false;
+  }
+}
+
+function show(body) {
+  const p = body.prediction;
+  const rows = Object.entries(p.probabilities).map(([name, prob]) => `
+    <div class="row ${name === p.class_name ? "top" : ""}">
+      <span>${esc(name)}</span>
+      <div class="bar"><div style="width:${(prob * 100).toFixed(1)}%"></div></div>
+      <span>${(prob * 100).toFixed(1)}%</span>
+    </div>`).join("");
+  result.innerHTML = `
+    <p class="muted">Predicted grade</p>
+    <p class="grade">${p.class_id} · ${esc(p.class_name)}</p>
+    <p>Confidence: <b>${(p.confidence * 100).toFixed(1)}%</b></p>
+    ${rows}
+    <p class="muted">${body.image_size.width}×${body.image_size.height} px · ${body.processing_time_ms} ms · ${esc(body.model)}</p>`;
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+</script>
+</body>
+</html>

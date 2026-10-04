@@ -193,6 +193,12 @@ def test_model_file_missing_returns_503():
         assert_error(upload(c, encode(make_fundus())), 503, "MODEL_NOT_LOADED")
 
 
+def test_demo_page(client):
+    r = client.get("/demo")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")
+    assert 'form.append("file"' in r.text          # page uses the documented field name
+
+
 def test_wrong_method_and_unknown_route(client):
     assert_error(client.get("/predict"), 405, "METHOD_NOT_ALLOWED")
     assert_error(client.get("/nope"), 404, "NOT_FOUND")

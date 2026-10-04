@@ -16,7 +16,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend import settings
@@ -71,6 +71,11 @@ def create_app(service=None):
         return JSONResponse(status_code=500, content=error_body("INTERNAL_ERROR", "Unexpected server error."))
 
     # ---------- routes ----------
+
+    @app.get("/demo", include_in_schema=False)
+    def demo_page():
+        """Small upload page (frontend_demo/index.html) that calls this API — for demos and as a reference."""
+        return FileResponse(settings.DEMO_PAGE_PATH, media_type="text/html")
 
     @app.get("/health")
     def health():
